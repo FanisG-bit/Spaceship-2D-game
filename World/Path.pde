@@ -2,22 +2,22 @@ import java.util.*;
 public class Path {
   
   List<PVector> waypoints;
-  List<Boolean> waypointsStatus;
-  Boolean[] shouldBegin;
   List<Enemy> followers;
   int waypointSize = 5;
   int timer;
+  /* When less than one second passes, the first enemy will start following the path (-1 will become 0)
+     After the same amount of time the next enemy will start following the path. It will keep going this
+     way for all enemies.*/
+  int enemyNumber = -1;
   
   public Path() {
     waypoints = new ArrayList<>();
-    waypointsStatus = new ArrayList<>();
     followers = new ArrayList<>();
     timer = 1;
   }
   
   void addWaypoint(PVector waypoint) {
     waypoints.add(waypoint);
-    waypointsStatus.add(false);
   }
   
   void addEnemy(Enemy enemy) {
@@ -33,46 +33,21 @@ public class Path {
   }
   
   void step() {
-      /*displayEnemies();
-      for(Enemy e : followers) {
-        if(e.currentPoint != waypoints.size()) {
-          if(e.location.x != waypoints.get(e.currentPoint).x 
-             && e.location.y != waypoints.get(e.currentPoint).y
-             && waypointsStatus.get(e.currentPoint) == false) {
-            seek(new PVector(waypoints.get(e.currentPoint).x, waypoints.get(e.currentPoint).y), e);
-            if(dist(e.location.x, e.location.y,
-                    waypoints.get(e.currentPoint).x, waypoints.get(e.currentPoint).y)
-                    < e.spriteSize.x/2 + waypointSize/2) {
-              waypointsStatus.set(e.currentPoint, false);
-              e.currentPoint++;
-            }
-          }
-        } else {
-          e.velocity.x = 0;
-          e.velocity.y = 0;
-        }
-      }*/
-      /*displayEnemies();
-      for(Enemy e : followers) {
-        e.followPath(this);
-      }*/
+      displayEnemies();
+      // If it was mod 60 it would mean that 1 second has passed. I want the difference to be (almost) the one 
+      // third of that.
       if (frameCount % 15 == 0 && timer > 0) { 
         timer--;
       }
-      displayEnemies();
       if(timer == 0) {
           enemyNumber++;
           if(enemyNumber < followers.size()) {
-          followers.get(enemyNumber).shouldStart = true;
-          timer = 1;
+            followers.get(enemyNumber).shouldStart = true;
+            // reset the timer for the next enemy in line.
+            timer = 1;
           }
-        }
-      for(int i=0;i<followers.size();i++) {
-        followers.get(i).followPath();
       }
   }
-  boolean isFinished = false;
-  int enemyNumber = -1;
   
   void displayEnemies() {
     for(Enemy e : followers) {

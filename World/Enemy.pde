@@ -9,6 +9,7 @@ public class Enemy {
   // where the enemy is positioned in relation to the waypoints of the
   // path that is being followed.
   int currentPoint;
+  // The path that is being followed by this enemy.
   Path path;
   int counter;
   
@@ -35,9 +36,12 @@ public class Enemy {
     String enemyImageName = "enemy" + enemyColor + enemyTypeChoice + ".png";
     sprite = loadImage(enemyImageName);
     spriteSize = new PVector(size, size);
-    location = new PVector(-5, -5);
     velocity = new PVector();
     currentPoint = 0;
+  }
+  
+  void setStartingLocation(PVector startingLocation) {
+    location = startingLocation;
   }
   
   void step() {
@@ -55,16 +59,19 @@ public class Enemy {
       if(shouldStart) {
         if(this.currentPoint != path.waypoints.size()) {
           if(this.location.x != path.waypoints.get(this.currentPoint).x 
-             && this.location.y != path.waypoints.get(this.currentPoint).y
-             && path.waypointsStatus.get(this.currentPoint) == false) {
+             && this.location.y != path.waypoints.get(this.currentPoint).y) {
             seek(new PVector(path.waypoints.get(this.currentPoint).x, path.waypoints.get(this.currentPoint).y)
-            , this);
+                 ,this);
             if(dist(this.location.x, this.location.y,
                     path.waypoints.get(this.currentPoint).x, path.waypoints.get(this.currentPoint).y)
                     < this.spriteSize.x/2 + path.waypointSize/2) {
-              path.waypointsStatus.set(this.currentPoint, false);
               this.currentPoint++;
             }
+          } else {
+            /* This else statement is extremely necessary in order to be able to set an
+               enemy's location on the FIRST waypoint of a path.
+            */
+            this.currentPoint++;
           }
         } else {
           this.velocity.x = 0;
