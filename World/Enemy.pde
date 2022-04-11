@@ -3,7 +3,7 @@ public class Enemy {
   
   PVector location;
   PVector velocity;
-  final int MAX_SPEED;
+  int maxSpeed;
   PImage sprite;
   PVector spriteSize;
   // where the enemy is positioned in relation to the waypoints of the
@@ -12,9 +12,20 @@ public class Enemy {
   // The path that is being followed by this enemy.
   Path path;
   int counter;
+  int health;
+  int countdownToShoot;
   
-  public Enemy(int speed, int size) {
-    MAX_SPEED = speed;
+  public Enemy(int speed, int size, int health) {
+    maxSpeed = speed;
+    sprite = loadImage(getRandomSprite());
+    spriteSize = new PVector(size, size);
+    velocity = new PVector();
+    currentPoint = 0;
+    this.health = health;
+    // countdownToShoot = (int)random(1, 3);
+  }
+  
+  String getRandomSprite() {
     Random random = new Random();
     int enemyColorChoice = 1 + random.nextInt(4);
     String enemyColor = "";
@@ -33,11 +44,11 @@ public class Enemy {
       break;
     }
     int enemyTypeChoice = 1 + random.nextInt(5);
-    String enemyImageName = "enemy" + enemyColor + enemyTypeChoice + ".png";
-    sprite = loadImage(enemyImageName);
-    spriteSize = new PVector(size, size);
-    velocity = new PVector();
-    currentPoint = 0;
+    return "enemy" + enemyColor + enemyTypeChoice + ".png";
+  }
+  
+  void setRandomSprite() {
+    sprite = loadImage(getRandomSprite());
   }
   
   void setStartingLocation(PVector startingLocation) {
@@ -47,6 +58,7 @@ public class Enemy {
   void step() {
     location.add(velocity);
     followPath();
+    shoot();
   }
   
   void display() {
@@ -57,6 +69,8 @@ public class Enemy {
   boolean shouldStart = false;
   void followPath() {
       if(shouldStart) {
+        // While the enemy is following the path, can shoot either after 1 or 2 seconds.
+        countdownToShoot = (int)random(1, 3);
         if(this.currentPoint != path.waypoints.size()) {
           if(this.location.x != path.waypoints.get(this.currentPoint).x 
              && this.location.y != path.waypoints.get(this.currentPoint).y) {
@@ -76,6 +90,13 @@ public class Enemy {
         } else {
           this.velocity.x = 0;
           this.velocity.y = 0;
+          path.addFollowerWhoHasFinished();
+          /* When the enemy dies (being transported to the last waypoint of the path),
+             we pass a stupidly big amount of time for the purpose if it not shooting while
+             off screen.
+          */
+          countdownToShoot = 6000;
+          shouldStart = false;
         }
       }
   }
@@ -83,10 +104,20 @@ public class Enemy {
   void seek(PVector target, Enemy thisEnemy) {
     PVector desiredV = PVector.sub(target, thisEnemy.location);
     desiredV.normalize();
-    desiredV.mult(thisEnemy.MAX_SPEED);
+    desiredV.mult(thisEnemy.maxSpeed);
     PVector steer = PVector.sub(desiredV, thisEnemy.velocity);
     steer.limit(10);
     thisEnemy.velocity.add(steer);
+  }
+  
+  void shoot() {
+    if(frameCount % 60 == 0 && countdownToShoot > 0) {
+      countdownToShoot--;
+    }
+    if(countdownToShoot == 0) {
+      enemyProjectiles.add(new EnemyProjectile(15, 15, this));
+      countdownToShoot = (int)random(1, 3);
+    }
   }
   
 }

@@ -1,0 +1,3 @@
+enum PowerUpType {
+  HEALTH, BOLT_GOLD, SHIELD_GOLD, SHIELD_SILVER
+}

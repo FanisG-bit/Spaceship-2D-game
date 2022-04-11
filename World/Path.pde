@@ -9,6 +9,8 @@ public class Path {
      After the same amount of time the next enemy will start following the path. It will keep going this
      way for all enemies.*/
   int enemyNumber = -1;
+  boolean isReadyToChange = false;
+  int followersThatHaveFinished = 0;
   
   public Path() {
     waypoints = new ArrayList<>();
@@ -53,6 +55,24 @@ public class Path {
     for(Enemy e : followers) {
       e.step();
       e.display();
+      if(e.health <= 0) {
+        PowerUp p = new PowerUp();
+        p.spawnPowerUp(e);
+        powerUps.add(p);
+        /* Look at the followPath method on the Enemy class. The second if statement explains
+        the need for the statements below. */
+        e.currentPoint = this.waypoints.size();
+        e.health = 1;
+        e.location.x = waypoints.get(waypoints.size()-1).x;
+        e.location.y = waypoints.get(waypoints.size()-1).y;
+      }
+    }
+  }
+  
+  void addFollowerWhoHasFinished() {
+    followersThatHaveFinished++;
+    if(followersThatHaveFinished == followers.size()) {
+      isReadyToChange = true;
     }
   }
   

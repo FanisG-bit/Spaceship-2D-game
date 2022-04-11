@@ -5,23 +5,62 @@ public class Player {
   final int MAX_SPEED;
   PImage sprite;
   PVector spriteSize;
+  int health;
+  /* We need to store the health that the player has in a static variable,
+     cause the other health variable is changing. */
+  final int NUMBER_OF_LIVES;
+  int score;
   
-  public Player(int size, int speed) {
+  public Player(int size, int speed, int health) {
     sprite = loadImage("playerShip1_blue.png");
     spriteSize = new PVector(size, size);
     location = new PVector(width/2, height/2);
     velocity = new PVector();
     MAX_SPEED = speed;
+    this.health = health;
+    NUMBER_OF_LIVES = health;
+    score = 0;
   }
   
   void step() {
     location.add(velocity);
     constrainPlayer();
+    collidingWithEnemy();
+    collidingWithPowerUp();
   }
   
   void display() {
     imageMode(CENTER);
     image(sprite, location.x, location.y, spriteSize.x, spriteSize.y);
+  }
+  
+  void collidingWithEnemy() {
+    for(Path path : paths) {
+      for(Enemy e : path.followers) {
+        if(dist(this.location.x, this.location.y, e.location.x, e.location.y) 
+                < this.spriteSize.x/2 + e.spriteSize.x/2) {
+          health--;
+          /* The easier way that I can think for dealing with this colliding issue
+          (player's health is all decreased) which is something that is caused due to
+          the player colliding with the enemy, is to destroy the enemy. I believe that this
+          does not cause any balancing issue since the player is getting hit, so there is
+          a penalty for doing that. So it cannot be exploited by the player's 
+          kamikaze attitude.
+          */
+          e.health--;
+        }
+      }
+    }
+  }
+  
+  void collidingWithPowerUp() {
+    for(PowerUp pwr : powerUps) {
+      if(!pwr.isConsumed && dist(this.location.x, this.location.y, pwr.location.x, pwr.location.y) 
+           < this.spriteSize.x/2 + pwr.spriteSize.x/2) {
+        pwr.triggerPowerUp();
+        pwr.isConsumed = true;
+      }
+    }
   }
   
   void moveUp() {
