@@ -12,7 +12,7 @@ List<PowerUp> powerUps;
 List<Path> paths;
 int enemiesSize = 50;
 int enemiesHealth = 1;
-boolean shouldGetWord = false;
+boolean shouldGetWord = true;
 PFont myCustomFont;
 /* The animation of the lightning power(as well as every aimation) needs to be initialised in the setup
    in order to load all the required frames once. Else the program lags.
@@ -23,7 +23,20 @@ int lightningWidth;
 SoundFile file;
 int shieldSize;
 Animation explosionAnim;
-List<Explosive> explosives;
+int explosionWidth;
+int explosionHeight;
+int automaticPointsTimer;
+
+// regarding the typing phase
+boolean isGameInTypingState;
+int typingStateCounter;
+int typingStateCounterStatic = 100;
+String randomKey = null;
+boolean isRandomKeyGenerated;
+char[] chars;
+boolean[] isCharTyped = null;
+boolean isWordPreparedForChecking = false;
+boolean isWordTyped = false;
 
 void setup() {
   size(500, 800);
@@ -42,16 +55,21 @@ void setup() {
   enemyProjectiles = new ArrayList<>();
   paths = new ArrayList<>();
   powerUps = new ArrayList<>();
-  createPaths(1);
+  // createPaths(1);
   lightningWidth = 100;
   lightningHeight = 600;
   lightningAnim = new Animation("tile", 7);
   shieldSize = 150;
   file = new SoundFile(this, "laserRetro_000.wav");
+  explosionWidth = 200;
+  explosionHeight = 200;
   explosionAnim = new Animation("frame_", 80);
-  explosives = new ArrayList<>();
+  automaticPointsTimer = 10;
+  isGameInTypingState = false;
+  typingStateCounter = typingStateCounterStatic;
+  isRandomKeyGenerated = false;
 }
-
+String[] words;
 void draw() {
   background(#030303);
   // Background related variables
@@ -61,42 +79,166 @@ void draw() {
   backgroundImage2.display();
   displayPlayerHealth();
   displayPlayerScore();
-  for(PowerUp pwr : powerUps) {
-    if(!pwr.isConsumed) {
-      pwr.display();
+  if(!isGameInTypingState) {
+    addAutoScoreTimer();
+    for(PowerUp pwr : powerUps) {
+      if(!pwr.isConsumed) {
+        pwr.display();
+      }
+      pwr.step();
     }
-    pwr.step();
-  }
-  for(EnemyProjectile ep : enemyProjectiles) {
-    if(ep.isActive) {
-      ep.step();
-      ep.display();
+    for(EnemyProjectile ep : enemyProjectiles) {
+      if(ep.isActive) {
+        ep.step();
+        ep.display();
+      }
     }
-  }
-  for(PlayerProjectile p : playerProjectiles) {
-    if(p.isActive) {
-      p.step();
-      p.display();
+    for(PlayerProjectile p : playerProjectiles) {
+       p.step();
+       p.display();
     }
-  }
-  for(Explosive ex : explosives) {
-   ex.display();
-   ex.step();
-  }
-  if(player.health > 0) {
-    player.step();
-    player.display();
-  }
-  for(Path path : paths) {
-    path.step();
-    path.display();
-    if(path.isReadyToChange) {
-      alterPathAndEnemies(path);
+    if(player.health > 0) {
+      player.step();
+      player.display();
+    }
+    for(Path path : paths) {
+      path.step();
+      path.display();
+      if(path.isReadyToChange) {
+        alterPathAndEnemies(path);
+      }
     }
   }
-  if(shouldGetWord) {
-    receiveRandomWord();
+  if(typingStateCounter != 0 && !isWordTyped) {
+    enableTypingState();
   }
+  
+}
+
+void enableTypingState() {
+  if(!isRandomKeyGenerated) {
+    // we retrieve a word only once every time
+    randomKey = retrieveRandomKey();
+    isGameInTypingState = true;
+    isRandomKeyGenerated = true;
+  }
+  typingStateCounter();
+  if(randomKey != null) {
+    text("Time Left: " + typingStateCounter, width/2-50, 250);
+    text("Type: ", width/2-20, 300);
+    int i = 0;
+    int pointX = 100;
+    int pointY = 400;
+    while(i < randomKey.length()) {
+      if(isCharTyped != null) {
+        if(isCharTyped[i] == true) {
+          fill(#EDFF00);
+        } else {
+          fill(#FFFFFF);
+        }
+      }
+      if(i == 0) {
+        textSize(25);
+        textMode(CENTER);
+        text(randomKey.charAt(i), pointX, pointY);
+      } else {
+        textSize(25);
+        textMode(CENTER);
+        text(randomKey.charAt(i), pointX, pointY);
+      }
+      pointX += 5 + 25;
+      i++;
+    }
+    fill(#FFFFFF);
+  } else {
+    isGameInTypingState = false;
+    isRandomKeyGenerated = false;
+  }
+}
+
+void typingStateCounter() {
+  if(frameCount % 60 == 0 && typingStateCounter > 0) {
+    typingStateCounter--;
+  }
+  if(typingStateCounter == 0) {
+    isGameInTypingState = false;
+    isRandomKeyGenerated = false;
+    isWordPreparedForChecking = false;
+    isWordTyped = false;
+  }
+}
+
+// key; in the sense of a random word or quote. Also because it "unclocks" access to a power up.
+String retrieveRandomKey() {
+    String randomWord = receiveRandomWord();
+    // boolean isOnlyLeft = false;
+    words = getWordsFromJSONString(randomWord, 6);
+    if(words[0] == null) {
+      // If the first option doesn't work then randomly choose one of the other two.
+      // float random = random(0, 1);
+      // if(random < 0.66) {
+          randomWord = receiveRandomDutchWord();
+          words = getWordsFromJSONString(randomWord, 6);
+          // System.out.println("(Dutch word)" + words[1]);
+          //if(words[0] == null) {
+            // isOnlyLeft = true;
+          //} else {
+          //  return words[1];
+          //}
+          return words[1];
+      /*else if (random >= 0.66 || isOnlyLeft){
+        String q = receiveRandomQuote();
+        try {
+          String[] qs = getWordsFromJSONString(q, 50);
+          // if a quote is big, we just get the first sentence. The content doesn't really
+          // matter anyway.
+          String randomQ = qs[4];
+          int pointBefore = 0;
+          for(int i=0; i<randomQ.length(); i++) {
+            if(randomQ.charAt(i) == '.') {
+              pointBefore = i;
+              break;
+            }
+          }
+          return randomQ.substring(0, pointBefore);
+        } catch(ArrayIndexOutOfBoundsException | NullPointerException e) {
+          return "Random Sentence";
+        }
+      }*/
+    } else {
+      return words[1];
+    }
+}
+
+String[] getWordsFromJSONString(String randomWord, int numberOfExpectedWords) {
+  int startingPoint = 0;
+  int endPoint = 0;
+  boolean hasSeenAnotherBracket = false;
+  String[] words = new String[numberOfExpectedWords];
+  String jsonWords = "";
+  int counter = 0;
+  for(int i=0; i<randomWord.length(); i++) {
+    if(randomWord.charAt(i) == '"' && !hasSeenAnotherBracket) {
+      startingPoint = i;
+      hasSeenAnotherBracket = true;
+    }
+    if(randomWord.charAt(i) == '"' && hasSeenAnotherBracket && i != startingPoint) {
+      endPoint = i;
+      hasSeenAnotherBracket = false;
+    }
+    if(!hasSeenAnotherBracket && startingPoint != 0 && endPoint != 0) {
+      jsonWords += randomWord.substring(startingPoint + 1, endPoint) + "\n";
+      try{
+        words[counter] = randomWord.substring(startingPoint + 1, endPoint);
+      }catch(ArrayIndexOutOfBoundsException e) {
+        return new String[0];
+      }
+      startingPoint = 0;
+      endPoint = 0;
+      counter++;
+    }
+  }
+  return words;
 }
 
 void createPaths(int numberOfPathsToGenerate) {
@@ -209,6 +351,33 @@ void keyPressed(){
    if ((key == 'S' || key == 's') && explosivePowerUp.isExplosivePowerUpActive) {
      playerProjectiles.add(new ExplosiveProjectile(player, 20, 20));
    }
+   if(typingStateCounter != 0) {
+     if(!isWordPreparedForChecking) {
+       prepareWordChecking();
+       isWordPreparedForChecking = true;
+     }
+     for(int i=0; i<randomKey.length(); i++) {
+       if(key == randomKey.charAt(i)) {
+         isCharTyped[i] = true;
+       }
+     }
+     for(int i=0; i<isCharTyped.length; i++) {
+       if(isCharTyped[i] != true) {
+         isWordTyped = false;
+         break;
+       }
+       if(i == isCharTyped.length-1) {
+         isWordTyped = true;
+       }
+     }
+   }
+}
+
+void prepareWordChecking() {
+   chars = new char[randomKey.length()];
+   isCharTyped = new boolean[randomKey.length()];
+   Arrays.fill(isCharTyped, false);
+   randomKey.getChars(0, randomKey.length(), chars, 0);
 }
 
 void keyReleased() {
@@ -218,7 +387,36 @@ void keyReleased() {
   }
 }
 
-void receiveRandomWord() {
+
+/* 
+Using the "Rapid API" platform, I managed to find an REST api that upon request, produces a
+random word along with a definition and the way that word is pronounced. I chose this webservice
+for the reason that it was free and provides 80 requests per minute (which is more than sufficient
+I believe). The only problem is that sometimes upexpectedly it may not work. The problem is not in 
+my code, but (I suppose) lies on the other end, which is something that I cannot do anything about.
+So the same (company, guy?) provides another url mapping (service) which is doing the same work
+(giving us random words) but now in dutch. So as an alternative, I'll call this service if the
+first one has trouble.
+Reference to the api -> https://rapidapi.com/mcnaveen/api/random-words-with-pronunciation/
+*/
+String receiveRandomDutchWord() {
+  HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://random-words-with-pronunciation.p.rapidapi.com/word/dutch"))
+    .header("X-RapidAPI-Host", "random-words-with-pronunciation.p.rapidapi.com")
+    .header("X-RapidAPI-Key", "e477cbefb7msh5d203ec6373a1f1p1e5e74jsnc3f8fa60ec02")
+    .method("GET", HttpRequest.BodyPublishers.noBody())
+    .build();  
+  try{
+    HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    // System.out.println(response.body());
+    return response.body();
+  }catch(Exception e) {
+    System.out.println("An error occured while trying to receive a random word.");
+  }
+  return null;
+}
+
+String receiveRandomWord() {
   HttpRequest request = HttpRequest.newBuilder()
     .uri(URI.create("https://random-words-with-pronunciation.p.rapidapi.com/word"))
     .header("X-RapidAPI-Host", "random-words-with-pronunciation.p.rapidapi.com")
@@ -227,11 +425,30 @@ void receiveRandomWord() {
     .build();  
   try{
     HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    System.out.println(response.body());
+    // System.out.println(response.body());
+    return response.body();
   }catch(Exception e) {
     System.out.println("An error occured while trying to receive a random word.");
   }
+  return null;
 }
+// Putting an extra alternative.
+/*String receiveRandomQuote() {
+  HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://quotes15.p.rapidapi.com/quotes/random/"))
+    .header("X-RapidAPI-Host", "quotes15.p.rapidapi.com")
+    .header("X-RapidAPI-Key", "e477cbefb7msh5d203ec6373a1f1p1e5e74jsnc3f8fa60ec02")
+    .method("GET", HttpRequest.BodyPublishers.noBody())
+    .build();  
+  try{
+    HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    // System.out.println(response.body());
+    return response.body();
+  }catch(Exception e) {
+    System.out.println("An error occured while trying to receive a random word.");
+  }
+  return null;
+}*/
 
 void displayPlayerHealth() {
   int posx = width-105;
@@ -246,4 +463,19 @@ void displayPlayerScore() {
   textSize(20);
   text("Score", 5, 20);
   text(player.score, 5, 40);
+}
+
+// Player gets 10 points for every 10 seconds that (s/)he is alive in the game.
+void addAutoScoreTimer() {
+  if(frameCount % 60 == 0 && automaticPointsTimer > 0) {
+    automaticPointsTimer--;
+  }
+  if(automaticPointsTimer == 0) {
+    addScoreForBeingAlive();
+    automaticPointsTimer = 10;
+  }
+}
+
+void addScoreForBeingAlive() {
+  player.score += 10;
 }

@@ -1,7 +1,8 @@
 class Animation {
+  
   PImage[] images;
   int imageCount;
-  int frame;
+  int frame = 0;
 
   Animation(String imagePrefix, int count) {
     imageCount = count;
@@ -22,7 +23,7 @@ class Animation {
           String filename = imagePrefix + i + "_delay-0.02s.gif";
           images[i] = loadImage(folder1 + "\\" + filename);
           imageMode(CENTER);
-          images[i].resize(300, 300);
+          images[i].resize(explosionWidth, explosionHeight);
        }
       break;
     }

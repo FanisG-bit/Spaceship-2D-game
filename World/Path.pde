@@ -56,9 +56,11 @@ public class Path {
       e.step();
       e.display();
       if(e.health <= 0) {
-        PowerUp p = new PowerUp();
-        p.spawnPowerUp(e);
-        powerUps.add(p);
+        if(shouldSpawnPowerUp()) {
+          PowerUp p = new PowerUp();
+          p.spawnPowerUp(e);
+          powerUps.add(p);
+        }
         /* Look at the followPath method on the Enemy class. The second if statement explains
         the need for the statements below. */
         e.currentPoint = this.waypoints.size();
@@ -67,6 +69,14 @@ public class Path {
         e.location.y = waypoints.get(waypoints.size()-1).y;
       }
     }
+  }
+  
+  boolean shouldSpawnPowerUp() {
+    float number = random(0, 1);
+    if(number <= 0.20) {
+      return true;
+    }
+    return false;
   }
   
   void addFollowerWhoHasFinished() {

@@ -31,13 +31,17 @@ public class PlayerProjectile {
   }
   
   void step() {
-    location.add(velocity);
-    collideWithEnemy();
+    if(isActive) {
+      location.add(velocity);
+      collideWithEnemy();
+    }
   }
   
   void display() {
-    imageMode(CENTER);
-    image(sprite, location.x, location.y);
+    if(isActive) {
+      imageMode(CENTER);
+      image(sprite, location.x, location.y);
+    }
   }
   
   void collideWithEnemy() {
