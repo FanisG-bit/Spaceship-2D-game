@@ -57,8 +57,11 @@ public class Player {
     for(PowerUp pwr : powerUps) {
       if(!pwr.isConsumed && dist(this.location.x, this.location.y, pwr.location.x, pwr.location.y) 
            < this.spriteSize.x/2 + pwr.spriteSize.x/2) {
-        pwr.triggerPowerUp();
-        pwr.isConsumed = true;
+        if(!isGameInTypingState) {
+          isGameInTypingState = true;
+          typingStateCounter = typingStateCounterStatic;
+          powerUpToTrigger = pwr;
+        }
       }
     }
   }

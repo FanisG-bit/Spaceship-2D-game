@@ -14,6 +14,7 @@ public class PowerUp {
   // Variables regarding explosive power
   int explosivePowerTimer = 0;
   boolean isExplosivePowerUpActive;
+  int slideDownVelocity = 5;
   
   public PowerUp() {
     location = new PVector();
@@ -79,6 +80,14 @@ public class PowerUp {
       imageMode(CENTER);
       //image(shieldSprite, player.location.x, player.location.y, shieldSize, shieldSize);
       explosivePowerUp = this;
+    }
+    location.add(new PVector(0, slideDownVelocity));
+    disableIfOutOfBounds();
+  }
+  
+  void disableIfOutOfBounds() {
+    if(location.y > height + spriteSize.y) {
+      isConsumed = true;
     }
   }
   

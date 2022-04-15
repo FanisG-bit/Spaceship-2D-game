@@ -14,7 +14,7 @@ int enemiesSize = 50;
 int enemiesHealth = 1;
 boolean shouldGetWord = true;
 PFont myCustomFont;
-/* The animation of the lightning power(as well as every aimation) needs to be initialised in the setup
+/* The animation of the lightning power(as well as every animation) needs to be initialised in the setup
    in order to load all the required frames once. Else the program lags.
 */
 Animation lightningAnim;
@@ -30,13 +30,12 @@ int automaticPointsTimer;
 // regarding the typing phase
 boolean isGameInTypingState;
 int typingStateCounter;
-int typingStateCounterStatic = 8;
-String randomKey = null;
-boolean isRandomKeyGenerated;
+int typingStateCounterStatic = 4;
+String randomKey;
 char[] chars;
 boolean[] isCharTyped = null;
-boolean isWordPreparedForChecking = false;
 boolean isWordTyped = false;
+PowerUp powerUpToTrigger = null;
 
 void setup() {
   size(500, 800);
@@ -67,7 +66,8 @@ void setup() {
   automaticPointsTimer = 10;
   isGameInTypingState = false;
   typingStateCounter = 0;
-  isRandomKeyGenerated = false;
+  randomKey = null;
+  retrieveRandomKey();
 }
 String[] words;
 void draw() {
@@ -112,34 +112,20 @@ void draw() {
   if(isGameInTypingState) {
     enableTypingState();
     if(isWordTyped) {
-      Enemy e = new Enemy();
-      e.location = new PVector();
-      e.location.x = width/2;
-      e.location.y = height/2;
-      PowerUp p = new PowerUp();
-      p.spawnPowerUp(e);
-      powerUps.add(p);
+      powerUpToTrigger.triggerPowerUp();
+      powerUpToTrigger.isConsumed = true;
       endTypingPhase();
     }
   }
 }
 
 void enableTypingState() {
-  if(!isRandomKeyGenerated) {
-    // we retrieve a word only once every time
-    randomKey = retrieveRandomKey();
-    isRandomKeyGenerated = true;
-    if(!isWordPreparedForChecking) {
-       prepareWordChecking();
-       isWordPreparedForChecking = true;
-    }
-  }
   typingStateCounter();
   if(randomKey != null) {
     text("Time Left: " + typingStateCounter, width/2-50, 250);
     text("Type: ", width/2-20, 300);
     int i = 0;
-    int pointX = 100;
+    int pointX = 50;
     int pointY = 400;
     while(i < randomKey.length()) {
       if(isCharTyped != null) {
@@ -175,53 +161,37 @@ void typingStateCounter() {
 }
 
 void endTypingPhase() {
+    /*
+      Every time that the typing phase finishes, either because the time runs out or because the player entered the
+      word correctly, we want to call the webservice in order to retrieve another word. This happens because we want the
+      random word to be already generated and ready to be displayed for the user, and not do that operation at that time.
+      In addition to this, it is of great importance to call this method within a thread (the thread method is being provided
+      by processing). That way we are not delaying and slowing down the program in order to call the webservice and retrieve the 
+      result, but we do it in parallel. That way the program does not lag and slow down.
+    */
+    thread("retrieveRandomKey");
     isGameInTypingState = false;
-    isRandomKeyGenerated = false;
-    isWordPreparedForChecking = false;
     isWordTyped = false;
     typingStateCounter = 0;
+    randomKey = null;
+    if(powerUpToTrigger != null) {
+      powerUpToTrigger.isConsumed = true;
+    }
 }
 
 // key; in the sense of a random word or quote. Also because it "unclocks" access to a power up.
-String retrieveRandomKey() {
+void retrieveRandomKey() {
     String randomWord = receiveRandomWord();
-    // boolean isOnlyLeft = false;
     words = getWordsFromJSONString(randomWord, 6);
     if(words[0] == null) {
-      // If the first option doesn't work then randomly choose one of the other two.
-      // float random = random(0, 1);
-      // if(random < 0.66) {
-          randomWord = receiveRandomDutchWord();
-          words = getWordsFromJSONString(randomWord, 6);
-          // System.out.println("(Dutch word)" + words[1]);
-          //if(words[0] == null) {
-            // isOnlyLeft = true;
-          //} else {
-          //  return words[1];
-          //}
-          return words[1];
-      /*else if (random >= 0.66 || isOnlyLeft){
-        String q = receiveRandomQuote();
-        try {
-          String[] qs = getWordsFromJSONString(q, 50);
-          // if a quote is big, we just get the first sentence. The content doesn't really
-          // matter anyway.
-          String randomQ = qs[4];
-          int pointBefore = 0;
-          for(int i=0; i<randomQ.length(); i++) {
-            if(randomQ.charAt(i) == '.') {
-              pointBefore = i;
-              break;
-            }
-          }
-          return randomQ.substring(0, pointBefore);
-        } catch(ArrayIndexOutOfBoundsException | NullPointerException e) {
-          return "Random Sentence";
-        }
-      }*/
+      randomWord = receiveRandomDutchWord();
+      words = getWordsFromJSONString(randomWord, 6);
+      randomKey = words[1];
     } else {
-      return words[1];
+      randomKey = words[1];
     }
+    System.out.println(randomKey);
+    prepareWordChecking();
 }
 
 String[] getWordsFromJSONString(String randomWord, int numberOfExpectedWords) {
@@ -365,22 +335,27 @@ void keyPressed(){
    if ((key == 'S' || key == 's') && explosivePowerUp.isExplosivePowerUpActive) {
      playerProjectiles.add(new ExplosiveProjectile(player, 20, 20));
    }
-   if(isGameInTypingState && isRandomKeyGenerated) {
-     for(int i=0; i<randomKey.length(); i++) {
-       if(key == randomKey.charAt(i) && isCharTyped[i] == false) {
-         isCharTyped[i] = true;
-         break;
+   try {
+     if(isGameInTypingState) {
+       for(int i=0; i<randomKey.length(); i++) {
+         if(key == randomKey.charAt(i) && isCharTyped[i] == false) {
+           isCharTyped[i] = true;
+           break;
+         }
+       }
+       for(int i=0; i<isCharTyped.length; i++) {
+         if(isCharTyped[i] != true) {
+           isWordTyped = false;
+           break;
+         }
+         if(i == isCharTyped.length-1) {
+           isWordTyped = true;
+         }
        }
      }
-     for(int i=0; i<isCharTyped.length; i++) {
-       if(isCharTyped[i] != true) {
-         isWordTyped = false;
-         break;
-       }
-       if(i == isCharTyped.length-1) {
-         isWordTyped = true;
-       }
-     }
+   } catch(Exception e) {
+     // Just to be safe
+     endTypingPhase();
    }
 }
 
