@@ -38,7 +38,7 @@ public class Path {
       displayEnemies();
       // If it was mod 60 it would mean that 1 second has passed. I want the difference to be (almost) the one 
       // third of that.
-      if (frameCount % 15 == 0 && timer > 0) { 
+      if (frameCount % 15 == 0 && timer > 0) {
         timer--;
       }
       if(timer == 0) {
@@ -56,10 +56,16 @@ public class Path {
       e.step();
       e.display();
       if(e.health <= 0) {
-        if(shouldSpawnPowerUp()) {
+        /*
           PowerUp p = new PowerUp();
           p.spawnPowerUp(e);
           powerUps.add(p);
+        */
+        if(!isGameInTypingState) {
+          if(shouldSpawnPowerUp()) {
+            isGameInTypingState = true;
+            typingStateCounter = typingStateCounterStatic;
+          }
         }
         /* Look at the followPath method on the Enemy class. The second if statement explains
         the need for the statements below. */
@@ -73,7 +79,7 @@ public class Path {
   
   boolean shouldSpawnPowerUp() {
     float number = random(0, 1);
-    if(number <= 0.20) {
+    if(number <= 0.10) {
       return true;
     }
     return false;

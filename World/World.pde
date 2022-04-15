@@ -30,7 +30,7 @@ int automaticPointsTimer;
 // regarding the typing phase
 boolean isGameInTypingState;
 int typingStateCounter;
-int typingStateCounterStatic = 100;
+int typingStateCounterStatic = 8;
 String randomKey = null;
 boolean isRandomKeyGenerated;
 char[] chars;
@@ -46,7 +46,7 @@ void setup() {
   backgroundImage.location.y = -backgroundImage.imageSize.y/2;
   backgroundImage2 = new Background();
   backgroundImage2.location.x = width/2;
-  backgroundImage2.location.y = -(backgroundImage2.imageSize.y/2 
+  backgroundImage2.location.y = -(backgroundImage2.imageSize.y/2
     - backgroundImage.imageSize.y);
   myCustomFont = createFont("Eras Bold ITC", 24);
   textFont(myCustomFont);
@@ -55,7 +55,7 @@ void setup() {
   enemyProjectiles = new ArrayList<>();
   paths = new ArrayList<>();
   powerUps = new ArrayList<>();
-  // createPaths(1);
+  createPaths(2);
   lightningWidth = 100;
   lightningHeight = 600;
   lightningAnim = new Animation("tile", 7);
@@ -66,7 +66,7 @@ void setup() {
   explosionAnim = new Animation("frame_", 80);
   automaticPointsTimer = 10;
   isGameInTypingState = false;
-  typingStateCounter = typingStateCounterStatic;
+  typingStateCounter = 0;
   isRandomKeyGenerated = false;
 }
 String[] words;
@@ -109,18 +109,30 @@ void draw() {
       }
     }
   }
-  if(typingStateCounter != 0 && !isWordTyped) {
+  if(isGameInTypingState) {
     enableTypingState();
+    if(isWordTyped) {
+      Enemy e = new Enemy();
+      e.location = new PVector();
+      e.location.x = width/2;
+      e.location.y = height/2;
+      PowerUp p = new PowerUp();
+      p.spawnPowerUp(e);
+      powerUps.add(p);
+      endTypingPhase();
+    }
   }
-  
 }
 
 void enableTypingState() {
   if(!isRandomKeyGenerated) {
     // we retrieve a word only once every time
     randomKey = retrieveRandomKey();
-    isGameInTypingState = true;
     isRandomKeyGenerated = true;
+    if(!isWordPreparedForChecking) {
+       prepareWordChecking();
+       isWordPreparedForChecking = true;
+    }
   }
   typingStateCounter();
   if(randomKey != null) {
@@ -149,11 +161,8 @@ void enableTypingState() {
       pointX += 5 + 25;
       i++;
     }
-    fill(#FFFFFF);
-  } else {
-    isGameInTypingState = false;
-    isRandomKeyGenerated = false;
   }
+  fill(#FFFFFF);
 }
 
 void typingStateCounter() {
@@ -161,11 +170,16 @@ void typingStateCounter() {
     typingStateCounter--;
   }
   if(typingStateCounter == 0) {
+    endTypingPhase();
+  }
+}
+
+void endTypingPhase() {
     isGameInTypingState = false;
     isRandomKeyGenerated = false;
     isWordPreparedForChecking = false;
     isWordTyped = false;
-  }
+    typingStateCounter = 0;
 }
 
 // key; in the sense of a random word or quote. Also because it "unclocks" access to a power up.
@@ -351,14 +365,11 @@ void keyPressed(){
    if ((key == 'S' || key == 's') && explosivePowerUp.isExplosivePowerUpActive) {
      playerProjectiles.add(new ExplosiveProjectile(player, 20, 20));
    }
-   if(typingStateCounter != 0) {
-     if(!isWordPreparedForChecking) {
-       prepareWordChecking();
-       isWordPreparedForChecking = true;
-     }
+   if(isGameInTypingState && isRandomKeyGenerated) {
      for(int i=0; i<randomKey.length(); i++) {
-       if(key == randomKey.charAt(i)) {
+       if(key == randomKey.charAt(i) && isCharTyped[i] == false) {
          isCharTyped[i] = true;
+         break;
        }
      }
      for(int i=0; i<isCharTyped.length; i++) {

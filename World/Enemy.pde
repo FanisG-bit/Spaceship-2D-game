@@ -15,6 +15,8 @@ public class Enemy {
   int health;
   int countdownToShoot;
   
+  public Enemy(){}
+  
   public Enemy(int speed, int size, int health) {
     maxSpeed = speed;
     sprite = loadImage(getRandomSprite());
