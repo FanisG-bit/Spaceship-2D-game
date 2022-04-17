@@ -33,6 +33,8 @@ public class EnemyProjectile {
     if(dist(this.location.x, this.location.y, player.location.x, player.location.y) 
                 < this.spriteSize.x/2 + player.spriteSize.x/2) {
        player.health--;
+       playerHit.amp(0.9);
+       playerHit.play();
        isActive = false;
     }
   }

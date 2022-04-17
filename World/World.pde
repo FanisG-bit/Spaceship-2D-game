@@ -65,6 +65,18 @@ SoundFile explosiveProjectileExplosion;
 SoundFile shieldPowerUp;
 SoundFile boss1Projectile;
 SoundFile bossDefeat;
+SoundFile boss1Background;
+SoundFile boss2Background;
+SoundFile boss3Background;
+SoundFile boss2Projectile;
+SoundFile boss3ProjectilePhase1;
+SoundFile boss3ProjectilePhase2;
+SoundFile playerHit;
+SoundFile correctLetter;
+SoundFile boss3Transform;
+SoundFile errorTyping;
+SoundFile backgroundMusic;
+SoundFile menuMusic;
 
 void setup() {
   size(500, 800);
@@ -78,7 +90,7 @@ void setup() {
     - backgroundImage.imageSize.y);
   myCustomFont = createFont("Eras Bold ITC", 24);
   textFont(myCustomFont);
-  player = new Player(50, 15, 30);
+  player = new Player(50, 15, 3);
   playerProjectiles = new ArrayList<>();
   enemyProjectiles = new ArrayList<>();
   paths = new ArrayList<>();
@@ -115,6 +127,18 @@ void setup() {
   shieldPowerUp = new SoundFile(this, "forceField_001.wav");
   boss1Projectile = new SoundFile(this, "pewpew_14.wav");
   bossDefeat = new SoundFile(this, "lowRandom.wav");
+  boss1Background = new SoundFile(this, "BossMain.wav");
+  boss2Background = new SoundFile(this, "Mercury.wav");
+  boss3Background = new SoundFile(this, "Mars.wav");
+  boss2Projectile = new SoundFile(this, "laserfire02.wav");
+  boss3ProjectilePhase1 = new SoundFile(this, "pewpew_9.wav");
+  boss3ProjectilePhase2 = new SoundFile(this, "pewpew_10.wav");
+  playerHit = new SoundFile(this, "phaserDown2.wav");
+  correctLetter = new SoundFile(this, "coin1.wav");
+  boss3Transform = new SoundFile(this, "transforming.wav");
+  errorTyping = new SoundFile(this, "Error.wav");
+  backgroundMusic = new SoundFile(this, "Cyberpunk Moonlight Sonata.wav");
+  menuMusic = new SoundFile(this, "Venus.wav");
 }
 
 void draw() {
@@ -126,6 +150,9 @@ void draw() {
   backgroundImage2.display();
   
   if(!startGame) {
+    if(!menuMusic.isPlaying()) {
+      menuMusic.loop();
+    }
     // menu UI
     textMode(CENTER);
     fill(#FFEC0F);
@@ -208,6 +235,10 @@ void draw() {
     buttons.get(0).text = "Try again";
     buttons.get(0).textLocation.x = width/2-60;
     displayPlayerScore();
+    backgroundMusic.stop();
+    if(menuMusic.isPlaying()) {
+      menuMusic.stop();
+    }
   }
   
   // This stops the electric power sound when needed.
@@ -223,22 +254,40 @@ void initiateBosses() {
     disableAnyRunningPowerUps();
     bosses.get(0).isActive = true;
     areTypicalEnemiesActive = false;
+    backgroundMusic.stop();
+    if(!boss1Background.isPlaying()) {
+      boss1Background.amp(0.8);
+      boss1Background.loop();
+    }
   }
   if(player.score >= 1500 && !bosses.get(1).isDefeated()) {
     disappearTypicalEnemies();
     disableAnyRunningPowerUps();
     bosses.get(1).isActive = true;
     areTypicalEnemiesActive = false;
+    backgroundMusic.stop();
+    if(!boss2Background.isPlaying()) {
+      boss2Background.amp(1);
+      boss2Background.loop();
+    }
   }
   if(player.score >= 2500 && !bosses.get(2).isDefeated()) {
     disappearTypicalEnemies();
     disableAnyRunningPowerUps();
     bosses.get(2).isActive = true;
     areTypicalEnemiesActive = false;
+    backgroundMusic.stop();
+    if(!boss3Background.isPlaying()) {
+      boss3Background.amp(0.8);
+      boss3Background.loop();
+    }
   }
   if(bosses.get(0).isDefeated() && bosses.get(1).isDefeated() && bosses.get(2).isDefeated()) {
     disappearTypicalEnemies();
     displayPlayerScore();
+    if(enemyProjectiles.size() > 0) {
+      enemyProjectiles.removeAll(enemyProjectiles);
+    }
     textMode(CENTER);
     textSize(80);
     fill(#12FF03);
@@ -388,6 +437,8 @@ void typingStateCounter() {
     typingStateCounter--;
   }
   if(typingStateCounter == 0) {
+    errorTyping.amp(1);
+    errorTyping.play();
     endTypingPhase();
   }
 }
@@ -519,7 +570,7 @@ void alterPathAndEnemies(Path path) {
        if(path.followers.size() > 6) {
          path.followers.remove(path.followers.size()-1);
          path.followers.remove(path.followers.size()-1);
-       } else {
+       } else if(path.followers.size() > 3) {
          path.followers.remove(path.followers.size()-1);
        }
      }
@@ -595,13 +646,18 @@ void keyPressed(){
    if ((key == 'S' || key == 's') && player.health > 0 
        && !lightningPowerUp.isLightningPowerUpActive && !explosivePowerUp.isExplosivePowerUpActive) {
          if(millis() > shootingRateTimer + 150) {
-           playerShootingSound.play();
+           // it may sound a bit odd at times but it prevents the audio of being disrupted after extensive use.
+           if(!playerShootingSound.isPlaying() && !isGameInTypingState) {
+              playerShootingSound.amp(0.7);
+              playerShootingSound.play(); 
+           }
            playerProjectiles.add(new PlayerProjectile(20, 20, player));
            shootingRateTimer = millis();
          }
    }
    if ((key == 'S' || key == 's') && explosivePowerUp.isExplosivePowerUpActive) {
      if(millis() > shootingRateTimer + 150) {
+       explosiveProjectile.amp(1);
        explosiveProjectile.play();
        playerProjectiles.add(new ExplosiveProjectile(player, 20, 20));
        shootingRateTimer = millis();
@@ -612,6 +668,8 @@ void keyPressed(){
        for(int i=0; i<randomKey.length(); i++) {
          if(key == randomKey.charAt(i) && isCharTyped[i] == false) {
            isCharTyped[i] = true;
+           correctLetter.amp(1);
+           correctLetter.play();
            break;
          }
        }
@@ -762,6 +820,9 @@ void startUpCounter() {
   if(countToStart == 0) {
     startGame = true;
     countToStart = -1;
+    backgroundMusic.amp(0.6);
+    backgroundMusic.loop();
+    menuMusic.stop();
   }
   if(countToStart == -1) {
     return;

@@ -43,6 +43,7 @@ public class Player {
         if(dist(this.location.x, this.location.y, e.location.x, e.location.y) 
                 < this.spriteSize.x/2 + e.spriteSize.x/2) {
           health--;
+          playerHit.play();
           /* The easier way that I can think for dealing with this colliding issue
           (player's health is all decreased) which is something that is caused due to
           the player colliding with the enemy, is to destroy the enemy. I believe that this

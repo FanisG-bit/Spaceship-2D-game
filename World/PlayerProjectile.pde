@@ -69,8 +69,18 @@ public class PlayerProjectile {
         if(b.isDefeated()) {
           player.score += 500;
           areTypicalEnemiesActive = true;
+          bossDefeat.amp(1);
           bossDefeat.play();
           boss1Projectile.stop();
+          boss2Projectile.stop();
+          boss3ProjectilePhase1.stop();
+          boss3ProjectilePhase2.stop();
+          boss1Background.stop();
+          boss2Background.stop();
+          boss3Background.stop();
+          if(!backgroundMusic.isPlaying()) {
+            backgroundMusic.loop();
+          }
         }
       }
     }

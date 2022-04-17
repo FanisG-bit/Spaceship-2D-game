@@ -90,6 +90,10 @@ public class Enemy {
         }
         if(shouldDisplayOpenAnim) {
           displayBoss3OpenAnimation();
+          if(!boss3Transform.isPlaying()) {
+            boss3Transform.amp(1);
+            boss3Transform.play();
+          }
         } else {
           spriteSize.x = 125;
         }
@@ -189,6 +193,7 @@ public class Enemy {
         countdownToShoot--;
       }
       if(countdownToShoot == 0) {
+        typicalEnemyShootingSound.amp(0.7); 
         typicalEnemyShootingSound.play();
         enemyProjectiles.add(new EnemyProjectile(15, 8, 48, this));
         countdownToShoot = (int)random(1, 3);
@@ -196,21 +201,26 @@ public class Enemy {
     } else {
       if(millis() > shootingEnemyTimer + shootingRate) {
         if(bossNumber == 1) {
+          boss1Projectile.amp(0.4);
           boss1Projectile.loop();
           EnemyProjectile ep = new EnemyProjectile(15, 8, 48, this);
           enemyProjectiles.add(ep);
         }
         if(bossNumber == 2) {
+          boss2Projectile.amp(0.3);
+          boss2Projectile.loop();
           EnemyProjectile ep = new EnemyProjectile(15, 25, 48, this);
           ep.sprite = loadImage("boss2projectile.png");
           enemyProjectiles.add(ep);
         }
         if(bossNumber == 3 && !shouldStartRotating) {
+          boss3ProjectilePhase1.loop();
           EnemyProjectile ep = new EnemyProjectile(6, 25, 25, this);
           ep.sprite = loadImage("boss3projectile.png");
           enemyProjectiles.add(ep);
         }
         if(bossNumber == 3 && shouldStartRotating) {
+          boss3ProjectilePhase2.loop();
           EnemyProjectile ep = null;
           if(player.location.y > location.y) {
             ep = new EnemyProjectile(15, 8, 48, this);

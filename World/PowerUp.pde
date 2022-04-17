@@ -160,6 +160,7 @@ public class PowerUp {
         if(player.health < player.NUMBER_OF_LIVES) {
           player.health++;
         }
+        lifePickUp.amp(1);
         lifePickUp.play();
       break;
       case BOLT_GOLD:
@@ -167,6 +168,7 @@ public class PowerUp {
       break;
       case SHIELD_GOLD:
         shieldPowerTimer = 6;
+        shieldPowerUp.amp(1);
         shieldPowerUp.play();
       break;
       case EXPLOSIVE:
