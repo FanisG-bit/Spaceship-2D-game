@@ -84,6 +84,11 @@ public class Path {
     if(followersThatHaveFinished == followers.size()) {
       isReadyToChange = true;
     }
+    /*
+      Uncomment line bellow to see in detail when enemies of a path indicate that they have reached
+      the final waypoint of their path.
+    */
+    // System.out.println(followersThatHaveFinished);
   }
   
 }

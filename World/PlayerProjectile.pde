@@ -33,7 +33,10 @@ public class PlayerProjectile {
   void step() {
     if(isActive) {
       location.add(velocity);
-      collideWithEnemy();
+      if(areTypicalEnemiesActive) {
+        collideWithEnemy();
+      }
+      collideWithBosses();
     }
   }
   
@@ -51,7 +54,21 @@ public class PlayerProjectile {
                 < this.spriteSize.x/2 + e.spriteSize.x/2) {
           e.health--;
           isActive = false;
-          player.score += 5;
+          player.score += 10;
+        }
+      }
+    }
+  }
+  
+  void collideWithBosses() {
+    for(Boss b : bosses) {
+      if(dist(this.location.x, this.location.y, b.location.x, b.location.y) 
+                < this.spriteSize.x/2 + b.spriteSize.x/2)  {
+        b.health--;
+        isActive = false;
+        if(b.isDefeated()) {
+          player.score += 500;
+          areTypicalEnemiesActive = true;
         }
       }
     }

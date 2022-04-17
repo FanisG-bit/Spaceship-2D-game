@@ -25,8 +25,11 @@ public class Player {
   void step() {
     location.add(velocity);
     constrainPlayer();
-    collidingWithEnemy();
+    if(areTypicalEnemiesActive) {
+      collidingWithEnemy();
+    }
     collidingWithPowerUp();
+    collidingWithBosses();
   }
   
   void display() {
@@ -62,6 +65,17 @@ public class Player {
           typingStateCounter = typingStateCounterStatic;
           powerUpToTrigger = pwr;
         }
+      }
+    }
+  }
+  
+  void collidingWithBosses() {
+    for(Boss b : bosses) {
+      if(b.location != null) {
+      if(dist(this.location.x, this.location.y, b.location.x, b.location.y) 
+                < this.spriteSize.x/2 + b.spriteSize.x/2)  {
+        health--;
+      }
       }
     }
   }

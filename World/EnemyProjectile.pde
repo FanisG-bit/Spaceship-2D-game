@@ -9,13 +9,13 @@ public class EnemyProjectile {
   Enemy enemy;
   boolean isActive;
   
-  public EnemyProjectile(int speed, int size, Enemy enemy) {
+  public EnemyProjectile(int speed, int sizeW, int sizeH, Enemy enemy) {
     sprite = loadImage("laserRed13.png");
     MAX_SPEED = speed;
     this.enemy = enemy;
     location = new PVector(enemy.location.x, enemy.location.y);
     velocity = new PVector(0, speed);
-    spriteSize = new PVector(size, size);
+    spriteSize = new PVector(sizeW, sizeH);
     isActive = true;
   }
   
@@ -26,7 +26,7 @@ public class EnemyProjectile {
   
   void display() {
     imageMode(CENTER);
-    image(sprite, location.x, location.y);
+    image(sprite, location.x, location.y, spriteSize.x, spriteSize.y);
   }
   
   void collideWithPlayer() {

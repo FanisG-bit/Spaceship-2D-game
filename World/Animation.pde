@@ -26,6 +26,24 @@ class Animation {
           images[i].resize(explosionWidth, explosionHeight);
        }
       break;
+      case "open_":
+        String folder2 = dataPath("boss3_open");
+        for (int i = 0; i < imageCount; i++) {
+          String filename = imagePrefix + i + "_delay-0.22s.gif";
+          images[i] = loadImage(folder2 + "\\" + filename);
+          imageMode(CENTER);
+          images[i].resize(boss3AnimSize, boss3AnimSize);
+       }
+      break;
+      case "close_":
+        String folder3 = dataPath("boss3_close");
+        for (int i = 0; i < imageCount; i++) {
+          String filename = imagePrefix + i + "_delay-0.2s.gif";
+          images[i] = loadImage(folder3 + "\\" + filename);
+          imageMode(CENTER);
+          images[i].resize(boss3AnimSize, boss3AnimSize);
+       }
+      break;
     }
   }
 

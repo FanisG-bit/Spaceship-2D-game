@@ -10,6 +10,7 @@ List<PlayerProjectile> playerProjectiles;
 List<EnemyProjectile> enemyProjectiles;
 List<PowerUp> powerUps;
 List<Path> paths;
+List<Boss> bosses;
 int enemiesSize = 50;
 int enemiesHealth = 1;
 boolean shouldGetWord = true;
@@ -37,6 +38,21 @@ boolean[] isCharTyped = null;
 boolean isWordTyped = false;
 PowerUp powerUpToTrigger = null;
 
+// boss 3 anims
+Animation boss3open;
+Animation boss3close;
+int boss3AnimSize = 125;
+
+/* 
+  regarding the fixing of the bug where you press down the shooting key and
+  there is constant firing whitout having fire rate. 
+  This source helped me to implement the shooting rate after x amount of milliseconds
+  -> https://forum.processing.org/one/topic/how-to-perform-an-action-every-x-seconds-time-delays.html
+*/
+int shootingRateTimer;
+
+boolean areTypicalEnemiesActive = true;
+
 void setup() {
   size(500, 800);
   // Regarding the scrolling background.
@@ -54,6 +70,7 @@ void setup() {
   enemyProjectiles = new ArrayList<>();
   paths = new ArrayList<>();
   powerUps = new ArrayList<>();
+  bosses = new ArrayList<>();
   createPaths(2);
   lightningWidth = 100;
   lightningHeight = 600;
@@ -68,6 +85,10 @@ void setup() {
   typingStateCounter = 0;
   randomKey = null;
   retrieveRandomKey();
+  createBosses();
+  shootingRateTimer = millis();
+  boss3open = new Animation("open_", 60);
+  boss3close = new Animation("close_", 7);
 }
 String[] words;
 void draw() {
@@ -101,11 +122,26 @@ void draw() {
       player.step();
       player.display();
     }
-    for(Path path : paths) {
-      path.step();
-      path.display();
-      if(path.isReadyToChange) {
-        alterPathAndEnemies(path);
+    if(areTypicalEnemiesActive){
+      for(Path path : paths) {
+        path.step();
+        path.display();
+        if(path.isReadyToChange) {
+          alterPathAndEnemies(path);
+        }
+      }
+    }
+    for(Boss boss : bosses) {
+      if(!boss.isDefeated() && boss.isActive) {
+         boss.step();
+         boss.display();
+         textMode(CENTER);
+         fill(#FF0000);
+         text("Health: " + boss.health, width/2-50, 50);
+         fill(#FFFFFF);
+      } else {
+        boss.location.x = -500;
+        boss.isActive = false;
       }
     }
   }
@@ -117,6 +153,120 @@ void draw() {
       endTypingPhase();
     }
   }
+  initiateBosses();
+}
+
+void initiateBosses() {
+  if(player.score >= 500 && !bosses.get(0).isDefeated()) {
+    disappearTypicalEnemies();
+    bosses.get(0).isActive = true;
+    areTypicalEnemiesActive = false;
+  }
+  if(player.score >= 1500 && !bosses.get(1).isDefeated()) {
+    disappearTypicalEnemies();
+    bosses.get(1).isActive = true;
+    areTypicalEnemiesActive = false;
+  }
+  if(player.score >= 2500 && !bosses.get(2).isDefeated()) {
+    disappearTypicalEnemies();
+    bosses.get(2).isActive = true;
+    areTypicalEnemiesActive = false;
+  }
+  if(bosses.get(0).isDefeated() && bosses.get(1).isDefeated() && bosses.get(2).isDefeated()) {
+    disappearTypicalEnemies();
+    textMode(CENTER);
+    textSize(80);
+    fill(#12FF03);
+    text("END", width/2-100, height/2);
+    fill(#F3FAF2);
+    textSize(20);
+    text("Developer: Fanis Gkoufas", width/2-100, height/2+20);
+    fill(#FFFFFF);
+  }
+}
+
+void disappearTypicalEnemies() {
+  for(Path p : paths) {
+    for(Enemy e : p.followers) {
+      e.currentPoint = p.waypoints.size();
+      e.health = 1;
+      e.location.x = p.waypoints.get(p.waypoints.size()-1).x;
+      e.location.y = p.waypoints.get(p.waypoints.size()-1).y;
+    }
+  }
+}
+
+void createBosses() {
+  // Boss #1
+  Boss boss1 = new Boss(7, 100, 10, "shipYellow_manned.png", 150, 1);
+  Path[] boss1Paths = new Path[1];
+  Path path0 = new Path();
+  path0.addWaypoint(new PVector(0+boss1.spriteSize.x/2, 0+boss1.spriteSize.y/2));
+  path0.addWaypoint(new PVector(width/2, height/2));
+  path0.addWaypoint(new PVector(width-boss1.spriteSize.x/2, height-boss1.spriteSize.y/2));
+  path0.addWaypoint(new PVector(width/2-boss1.spriteSize.x/2, height/2-boss1.spriteSize.y/2));
+  path0.addWaypoint(new PVector(0+boss1.spriteSize.x/2, height-boss1.spriteSize.y/2));
+  path0.addWaypoint(new PVector(width/2, height/2));
+  path0.addWaypoint(new PVector(width-boss1.spriteSize.x/2, 0+boss1.spriteSize.y/2));
+  path0.addWaypoint(new PVector(width/2, height/2));
+  boss1Paths[0] = path0;
+  boss1.setPaths(boss1Paths);
+  boss1.setStartingLocation(new PVector(0,0));
+  boss1.shouldStart = true;
+  boss1.setPathToFollow(0);
+  bosses.add(boss1);
+  
+  // Boss #2
+  Boss boss2 = new Boss(8, 70, 70, "boss2.png", 300, 2);
+  Path[] boss2Paths = new Path[1];
+  Path boss2Path0 = new Path();
+  boss2Path0.addWaypoint(new PVector(0+boss2.spriteSize.x/2, 0+boss2.spriteSize.x/2));
+  boss2Path0.addWaypoint(new PVector(width-boss2.spriteSize.x/2, 0+boss2.spriteSize.x/2));
+  boss2Path0.addWaypoint(new PVector(width-boss2.spriteSize.x/2, 200));
+  boss2Path0.addWaypoint(new PVector(0+boss2.spriteSize.x/2, 200));
+  boss2Path0.addWaypoint(new PVector(0+boss2.spriteSize.x/2, 400));
+  boss2Path0.addWaypoint(new PVector(width-boss2.spriteSize.x/2, 400));
+  boss2Path0.addWaypoint(new PVector(0+boss2.spriteSize.x/2, 700));
+  boss2Path0.addWaypoint(new PVector(width-boss2.spriteSize.x/2, 700));
+  boss2Path0.addWaypoint(new PVector(0+boss2.spriteSize.x/2, 700));
+  boss2Path0.addWaypoint(new PVector(width-boss2.spriteSize.x/2, 400));
+  boss2Path0.addWaypoint(new PVector(0+boss2.spriteSize.x/2, 400));
+  boss2Path0.addWaypoint(new PVector(0+boss2.spriteSize.x/2, 200));
+  boss2Path0.addWaypoint(new PVector(width-boss2.spriteSize.x/2, 200));
+  boss2Path0.addWaypoint(new PVector(width-boss2.spriteSize.x/2, 0+boss2.spriteSize.x/2));
+  boss2Path0.addWaypoint(new PVector(0+boss2.spriteSize.x/2, 0+boss2.spriteSize.x/2));
+  boss2Paths[0] = boss2Path0;
+  boss2.setPaths(boss2Paths);
+  boss2.setStartingLocation(new PVector(0, 0));
+  boss2.shouldStart = true;
+  boss2.setPathToFollow(0);
+  bosses.add(boss2);
+  
+  // Boss #3
+  Boss boss3 = new Boss(5, 125, 100, "boss3.png", 350, 3);
+  Path[] boss3Paths = new Path[3];
+  // Path #0
+  Path boss3Path0 = new Path();
+  boss3Path0.addWaypoint(new PVector(0+boss3.spriteSize.x/2-80, 150));
+  boss3Path0.addWaypoint(new PVector(width-boss3.spriteSize.x/2+80, 150));
+  boss3Paths[0] = boss3Path0;
+  // Path #1
+  Path boss3Path1 = new Path();
+  boss3Path1.addWaypoint(new PVector(width/2, height/2));
+  boss3Paths[1] = boss3Path1;
+  // Path #3
+  Path boss3Path2 = new Path();
+  boss3Path2.addWaypoint(new PVector(100, 100));
+  boss3Path2.addWaypoint(new PVector(width/2, 50));
+  boss3Path2.addWaypoint(new PVector(430, 150));
+  boss3Path2.addWaypoint(new PVector(430, height-100));
+  boss3Path2.addWaypoint(new PVector(30, height-100));
+  boss3Paths[2] = boss3Path2;
+  boss3.setPaths(boss3Paths);
+  boss3.setStartingLocation(new PVector(0, 0));
+  boss3.shouldStart = true;
+  boss3.setPathToFollow(0);
+  bosses.add(boss3);
 }
 
 void enableTypingState() {
@@ -190,7 +340,11 @@ void retrieveRandomKey() {
     } else {
       randomKey = words[1];
     }
-    System.out.println(randomKey);
+    /*
+      Uncomment line below in order to see the random generated word as well as the point when it is 
+      being retrieved.
+    */
+    // System.out.println(randomKey);
     prepareWordChecking();
 }
 
@@ -243,6 +397,12 @@ void createPaths(int numberOfPathsToGenerate) {
 }
 
 void alterPathAndEnemies(Path path) {
+   Enemy newEnemy = null;
+   boolean shouldAdd = false;
+   float randomNumber = random(0, 1);
+   if(randomNumber <= 0.60) {
+     shouldAdd = true;
+   }
    PVector[] waipointPositions = randomlyPositionWaypoints(enemiesSize);
    path.waypoints.get(0).x = waipointPositions[0].x;
    path.waypoints.get(0).y = waipointPositions[0].y;
@@ -260,10 +420,32 @@ void alterPathAndEnemies(Path path) {
    path.enemyNumber = -1;
    path.timer = 1;
    path.followersThatHaveFinished = 0;
+   if(shouldAdd) {
+     float addOrDelete = random(0, 1);
+     if(addOrDelete >= 0.40) {
+       if(path.followers.size() < 7) {
+         newEnemy = new Enemy(enemiesVelocity, enemiesSize, enemiesHealth);
+         newEnemy.setStartingLocation(new PVector(waipointPositions[0].x, waipointPositions[0].y));
+         path.addEnemy(newEnemy);
+         if(path.followers.size() >= 2 && path.followers.size() < 3) {
+           Enemy additionalEnemy = new Enemy(enemiesVelocity, enemiesSize, enemiesHealth);
+           additionalEnemy.setStartingLocation(new PVector(waipointPositions[0].x, waipointPositions[0].y));
+           path.addEnemy(additionalEnemy);
+         }
+       }
+     } else {
+       if(path.followers.size() > 6) {
+         path.followers.remove(path.followers.size()-1);
+         path.followers.remove(path.followers.size()-1);
+       } else {
+         path.followers.remove(path.followers.size()-1);
+       }
+     }
+   }
 }
 
 int generateRandomNumberForEnemies() {
-  return (int)random(3, 8);
+  return (int)random(4, 8);
 }
 
 PVector[] randomlyPositionWaypoints(int pathsEnemySize) {
@@ -330,7 +512,10 @@ void keyPressed(){
    }
    if ((key == 'S' || key == 's') && player.health > 0 
        && !lightningPowerUp.isLightningPowerUpActive && !explosivePowerUp.isExplosivePowerUpActive) {
-     playerProjectiles.add(new PlayerProjectile(20, 20, player));
+         if(millis() > shootingRateTimer + 150) {
+           playerProjectiles.add(new PlayerProjectile(20, 20, player));
+           shootingRateTimer = millis();
+         }
    }
    if ((key == 'S' || key == 's') && explosivePowerUp.isExplosivePowerUpActive) {
      playerProjectiles.add(new ExplosiveProjectile(player, 20, 20));
