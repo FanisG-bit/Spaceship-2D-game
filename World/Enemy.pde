@@ -189,12 +189,14 @@ public class Enemy {
         countdownToShoot--;
       }
       if(countdownToShoot == 0) {
+        typicalEnemyShootingSound.play();
         enemyProjectiles.add(new EnemyProjectile(15, 8, 48, this));
         countdownToShoot = (int)random(1, 3);
       }
     } else {
       if(millis() > shootingEnemyTimer + shootingRate) {
         if(bossNumber == 1) {
+          boss1Projectile.loop();
           EnemyProjectile ep = new EnemyProjectile(15, 8, 48, this);
           enemyProjectiles.add(ep);
         }

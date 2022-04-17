@@ -36,8 +36,8 @@ public class PowerUp {
          shieldSprite = loadImage("shield1.png");
       break;
       case 3:
-       sprite = loadImage("shield_silver.png");
-       powerUpType = PowerUpType.SHIELD_SILVER;
+       sprite = loadImage("powerupRed_star.png");
+       powerUpType = PowerUpType.EXPLOSIVE;
       break;
     }
     spriteSize = new PVector(20, 20);
@@ -63,6 +63,9 @@ public class PowerUp {
       lightningAnim.display(player.location.x, player.location.y-290, false);
       lightningCollidingWithEnemies();
       lightningPowerUp = this;
+      if(!lightningPower.isPlaying()) {
+         lightningPower.loop(); 
+      }
     }
     // Uncomment to see "collider" of shield power.
     /*
@@ -76,7 +79,7 @@ public class PowerUp {
       image(shieldSprite, player.location.x, player.location.y, shieldSize, shieldSize);
       shieldDeflectEnemyProjectiles();
     }
-    if((isExplosivePowerActive()) && powerUpType == PowerUpType.SHIELD_SILVER) {
+    if((isExplosivePowerActive()) && powerUpType == PowerUpType.EXPLOSIVE) {
       imageMode(CENTER);
       //image(shieldSprite, player.location.x, player.location.y, shieldSize, shieldSize);
       explosivePowerUp = this;
@@ -141,7 +144,7 @@ public class PowerUp {
   
   void shieldDeflectEnemyProjectiles() {
     for(EnemyProjectile ep : enemyProjectiles) {
-      if(ep.location.x > player.location.x - shieldSize/2 
+      if(ep.location.x > player.location.x - shieldSize/2
          && ep.location.x < player.location.x + shieldSize/2
          && ep.location.y > player.location.y - shieldSize/2 - ep.spriteSize.y
          && ep.location.y < player.location.y + shieldSize/2) {
@@ -157,14 +160,16 @@ public class PowerUp {
         if(player.health < player.NUMBER_OF_LIVES) {
           player.health++;
         }
+        lifePickUp.play();
       break;
       case BOLT_GOLD:
         lightningPowerTimer = 3;
       break;
       case SHIELD_GOLD:
         shieldPowerTimer = 6;
+        shieldPowerUp.play();
       break;
-      case SHIELD_SILVER:
+      case EXPLOSIVE:
         explosivePowerTimer = 5;
       break;
     }

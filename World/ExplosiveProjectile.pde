@@ -26,6 +26,7 @@ public class ExplosiveProjectile extends PlayerProjectile {
           locX = e.location.x;
           locY = e.location.y;
           isExplosionActive = true;
+          explosiveProjectileExplosion.play();
           break;
         }
       }

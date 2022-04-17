@@ -69,6 +69,8 @@ public class PlayerProjectile {
         if(b.isDefeated()) {
           player.score += 500;
           areTypicalEnemiesActive = true;
+          bossDefeat.play();
+          boss1Projectile.stop();
         }
       }
     }

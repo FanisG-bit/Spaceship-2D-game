@@ -11,6 +11,7 @@ List<EnemyProjectile> enemyProjectiles;
 List<PowerUp> powerUps;
 List<Path> paths;
 List<Boss> bosses;
+List<Button> buttons;
 int enemiesSize = 50;
 int enemiesHealth = 1;
 boolean shouldGetWord = true;
@@ -21,7 +22,6 @@ PFont myCustomFont;
 Animation lightningAnim;
 int lightningHeight;
 int lightningWidth;
-SoundFile file;
 int shieldSize;
 Animation explosionAnim;
 int explosionWidth;
@@ -37,6 +37,7 @@ char[] chars;
 boolean[] isCharTyped = null;
 boolean isWordTyped = false;
 PowerUp powerUpToTrigger = null;
+String[] words;
 
 // boss 3 anims
 Animation boss3open;
@@ -50,8 +51,20 @@ int boss3AnimSize = 125;
   -> https://forum.processing.org/one/topic/how-to-perform-an-action-every-x-seconds-time-delays.html
 */
 int shootingRateTimer;
-
 boolean areTypicalEnemiesActive = true;
+boolean startGame = false;
+int countToStart = -1;
+
+// Sounds
+SoundFile playerShootingSound;
+SoundFile typicalEnemyShootingSound;
+SoundFile lifePickUp;
+SoundFile lightningPower;
+SoundFile explosiveProjectile;
+SoundFile explosiveProjectileExplosion;
+SoundFile shieldPowerUp;
+SoundFile boss1Projectile;
+SoundFile bossDefeat;
 
 void setup() {
   size(500, 800);
@@ -65,7 +78,7 @@ void setup() {
     - backgroundImage.imageSize.y);
   myCustomFont = createFont("Eras Bold ITC", 24);
   textFont(myCustomFont);
-  player = new Player(50, 15, 3);
+  player = new Player(50, 15, 30);
   playerProjectiles = new ArrayList<>();
   enemyProjectiles = new ArrayList<>();
   paths = new ArrayList<>();
@@ -76,7 +89,6 @@ void setup() {
   lightningHeight = 600;
   lightningAnim = new Animation("tile", 7);
   shieldSize = 150;
-  file = new SoundFile(this, "laserRetro_000.wav");
   explosionWidth = 200;
   explosionHeight = 200;
   explosionAnim = new Animation("frame_", 80);
@@ -89,8 +101,22 @@ void setup() {
   shootingRateTimer = millis();
   boss3open = new Animation("open_", 60);
   boss3close = new Animation("close_", 7);
+  buttons = new ArrayList<>();
+  Button start = new Button(150, 40, new PVector(width/2-67, height/2+7), "Start game", 25, new PVector(width/2, height/2), #030303);
+  buttons.add(start);
+  // Sounds
+  playerShootingSound = new SoundFile(this, "laserRetro_000.wav");
+  typicalEnemyShootingSound = new SoundFile(this, "pewpew_1.wav");
+  lifePickUp = new SoundFile(this, "life_pickup.wav");
+  lightningPower = new SoundFile(this, "shock.wav");
+  explosiveProjectile = new SoundFile(this, "pewpew_6.wav");
+  // explosiveProjectileExplosion = new SoundFile(this, "sfx_explosionFlash.wav");
+  explosiveProjectileExplosion = new SoundFile(this, "explosionCrunch_003.wav");
+  shieldPowerUp = new SoundFile(this, "forceField_001.wav");
+  boss1Projectile = new SoundFile(this, "pewpew_14.wav");
+  bossDefeat = new SoundFile(this, "lowRandom.wav");
 }
-String[] words;
+
 void draw() {
   background(#030303);
   // Background related variables
@@ -98,82 +124,121 @@ void draw() {
   backgroundImage.display();
   backgroundImage2.step();
   backgroundImage2.display();
-  displayPlayerHealth();
-  displayPlayerScore();
-  if(!isGameInTypingState) {
-    addAutoScoreTimer();
-    for(PowerUp pwr : powerUps) {
-      if(!pwr.isConsumed) {
-        pwr.display();
-      }
-      pwr.step();
-    }
-    for(EnemyProjectile ep : enemyProjectiles) {
-      if(ep.isActive) {
-        ep.step();
-        ep.display();
+  
+  if(!startGame) {
+    // menu UI
+    textMode(CENTER);
+    fill(#FFEC0F);
+    textSize(30);
+    text("SPACE TYPING SURVIVAL", width/2-190, height/2-100);
+    fill(#FFFFFF);
+    for(Button b : buttons) {
+      if(countToStart == -1) {
+        b.display();
       }
     }
-    for(PlayerProjectile p : playerProjectiles) {
-       p.step();
-       p.display();
-    }
-    if(player.health > 0) {
-      player.step();
-      player.display();
-    }
-    if(areTypicalEnemiesActive){
-      for(Path path : paths) {
-        path.step();
-        path.display();
-        if(path.isReadyToChange) {
-          alterPathAndEnemies(path);
+    startUpCounter();
+  }
+  
+  if(startGame) {
+    displayPlayerHealth();
+    displayPlayerScore();
+      
+    if(!isGameInTypingState) {
+      if(player.health > 0) {
+        addAutoScoreTimer();
+      }
+      for(PowerUp pwr : powerUps) {
+        if(!pwr.isConsumed) {
+          pwr.display();
+        }
+        pwr.step();
+      }
+      for(EnemyProjectile ep : enemyProjectiles) {
+        if(ep.isActive) {
+          ep.step();
+          ep.display();
+        }
+      }
+      for(PlayerProjectile p : playerProjectiles) {
+         p.step();
+         p.display();
+      }
+      if(player.health > 0) {
+        player.step();
+        player.display();
+      }
+      if(areTypicalEnemiesActive){
+        for(Path path : paths) {
+          path.step();
+          path.display();
+          if(path.isReadyToChange) {
+            alterPathAndEnemies(path);
+          }
+        }
+      }
+      for(Boss boss : bosses) {
+        if(!boss.isDefeated() && boss.isActive) {
+           boss.step();
+           boss.display();
+           textMode(CENTER);
+           fill(#FF0000);
+           text("Health: " + boss.health, width/2-50, 50);
+           fill(#FFFFFF);
+        } else {
+          boss.location.x = -500;
+          boss.isActive = false;
         }
       }
     }
-    for(Boss boss : bosses) {
-      if(!boss.isDefeated() && boss.isActive) {
-         boss.step();
-         boss.display();
-         textMode(CENTER);
-         fill(#FF0000);
-         text("Health: " + boss.health, width/2-50, 50);
-         fill(#FFFFFF);
-      } else {
-        boss.location.x = -500;
-        boss.isActive = false;
+    if(isGameInTypingState) {
+      enableTypingState();
+      if(isWordTyped) {
+        powerUpToTrigger.triggerPowerUp();
+        powerUpToTrigger.isConsumed = true;
+        endTypingPhase();
       }
     }
+    initiateBosses();
   }
-  if(isGameInTypingState) {
-    enableTypingState();
-    if(isWordTyped) {
-      powerUpToTrigger.triggerPowerUp();
-      powerUpToTrigger.isConsumed = true;
-      endTypingPhase();
-    }
+  
+  // Game state in the case of player's death.
+  if(player.health <= 0) {
+    startGame = false;
+    buttons.get(0).text = "Try again";
+    buttons.get(0).textLocation.x = width/2-60;
+    displayPlayerScore();
   }
-  initiateBosses();
+  
+  // This stops the electric power sound when needed.
+  if(lightningPowerUp != null && !lightningPowerUp.isLightningPowerActive() && lightningPower.isPlaying()) {
+    lightningPower.stop();
+  }
+  
 }
 
 void initiateBosses() {
   if(player.score >= 500 && !bosses.get(0).isDefeated()) {
     disappearTypicalEnemies();
+    disableAnyRunningPowerUps();
     bosses.get(0).isActive = true;
     areTypicalEnemiesActive = false;
   }
   if(player.score >= 1500 && !bosses.get(1).isDefeated()) {
     disappearTypicalEnemies();
+    disableAnyRunningPowerUps();
     bosses.get(1).isActive = true;
     areTypicalEnemiesActive = false;
   }
   if(player.score >= 2500 && !bosses.get(2).isDefeated()) {
     disappearTypicalEnemies();
+    disableAnyRunningPowerUps();
     bosses.get(2).isActive = true;
     areTypicalEnemiesActive = false;
   }
   if(bosses.get(0).isDefeated() && bosses.get(1).isDefeated() && bosses.get(2).isDefeated()) {
     disappearTypicalEnemies();
+    displayPlayerScore();
     textMode(CENTER);
     textSize(80);
     fill(#12FF03);
@@ -182,6 +247,23 @@ void initiateBosses() {
     textSize(20);
     text("Developer: Fanis Gkoufas", width/2-100, height/2+20);
     fill(#FFFFFF);
+  }
+}
+
+void disableAnyRunningPowerUps() {
+  for(PowerUp pwr : powerUps) {
+    if(pwr.isLightningPowerUpActive) {
+      pwr.isLightningPowerUpActive = false;
+    }
+    if(pwr.isExplosivePowerUpActive) {
+      pwr.isExplosivePowerUpActive = false;
+    }
+  }
+  for(PlayerProjectile pl : playerProjectiles) {
+    if(pl instanceof ExplosiveProjectile) {
+      ExplosiveProjectile expl = (ExplosiveProjectile) pl;
+      expl.isExplosionActive = false;
+    }
   }
 }
 
@@ -198,16 +280,16 @@ void disappearTypicalEnemies() {
 
 void createBosses() {
   // Boss #1
-  Boss boss1 = new Boss(7, 100, 10, "shipYellow_manned.png", 150, 1);
+  Boss boss1 = new Boss(7, 100, 50, "shipYellow_manned.png", 150, 1);
   Path[] boss1Paths = new Path[1];
   Path path0 = new Path();
-  path0.addWaypoint(new PVector(0+boss1.spriteSize.x/2, 0+boss1.spriteSize.y/2));
+  path0.addWaypoint(new PVector(0+boss1.spriteSize.x/2-40, 0+boss1.spriteSize.y/2));
   path0.addWaypoint(new PVector(width/2, height/2));
   path0.addWaypoint(new PVector(width-boss1.spriteSize.x/2, height-boss1.spriteSize.y/2));
   path0.addWaypoint(new PVector(width/2-boss1.spriteSize.x/2, height/2-boss1.spriteSize.y/2));
   path0.addWaypoint(new PVector(0+boss1.spriteSize.x/2, height-boss1.spriteSize.y/2));
   path0.addWaypoint(new PVector(width/2, height/2));
-  path0.addWaypoint(new PVector(width-boss1.spriteSize.x/2, 0+boss1.spriteSize.y/2));
+  path0.addWaypoint(new PVector(width-boss1.spriteSize.x/2+40, 0+boss1.spriteSize.y/2));
   path0.addWaypoint(new PVector(width/2, height/2));
   boss1Paths[0] = path0;
   boss1.setPaths(boss1Paths);
@@ -513,12 +595,17 @@ void keyPressed(){
    if ((key == 'S' || key == 's') && player.health > 0 
        && !lightningPowerUp.isLightningPowerUpActive && !explosivePowerUp.isExplosivePowerUpActive) {
          if(millis() > shootingRateTimer + 150) {
+           playerShootingSound.play();
            playerProjectiles.add(new PlayerProjectile(20, 20, player));
            shootingRateTimer = millis();
          }
    }
    if ((key == 'S' || key == 's') && explosivePowerUp.isExplosivePowerUpActive) {
-     playerProjectiles.add(new ExplosiveProjectile(player, 20, 20));
+     if(millis() > shootingRateTimer + 150) {
+       explosiveProjectile.play();
+       playerProjectiles.add(new ExplosiveProjectile(player, 20, 20));
+       shootingRateTimer = millis();
+     }
    }
    try {
      if(isGameInTypingState) {
@@ -649,4 +736,39 @@ void addAutoScoreTimer() {
 
 void addScoreForBeingAlive() {
   player.score += 10;
+}
+
+void mouseClicked() {
+  int posX = mouseX;
+  int posY = mouseY;
+  Button start = buttons.get(0);
+  if(posX >= start.bLocation.x - start.bWidth/2 
+     && posX <= start.bLocation.x + start.bWidth/2
+     && posY >= start.bLocation.y - start.bHeight/2
+     && posY <= start.bLocation.y + start.bHeight/2) {
+    // for the retry
+    if(player.health <= 0) {
+      setup();
+      areTypicalEnemiesActive = true;
+    }
+    countToStart = 3;
+  }
+}
+
+void startUpCounter() {
+  if(frameCount % 60 == 0 && countToStart > 0) {
+    countToStart--;
+  }
+  if(countToStart == 0) {
+    startGame = true;
+    countToStart = -1;
+  }
+  if(countToStart == -1) {
+    return;
+  }
+  textMode(CENTER);
+  fill(#FFEC0F);
+  textSize(60);
+  text(countToStart, width/2-20, height/2+50);
+  fill(#FFFFFF);
 }
