@@ -719,7 +719,7 @@ String receiveRandomDutchWord() {
   HttpRequest request = HttpRequest.newBuilder()
     .uri(URI.create("https://random-words-with-pronunciation.p.rapidapi.com/word/dutch"))
     .header("X-RapidAPI-Host", "random-words-with-pronunciation.p.rapidapi.com")
-    .header("X-RapidAPI-Key", "e477cbefb7msh5d203ec6373a1f1p1e5e74jsnc3f8fa60ec02")
+    .header("X-RapidAPI-Key", "")
     .method("GET", HttpRequest.BodyPublishers.noBody())
     .build();  
   try{
@@ -736,7 +736,7 @@ String receiveRandomWord() {
   HttpRequest request = HttpRequest.newBuilder()
     .uri(URI.create("https://random-words-with-pronunciation.p.rapidapi.com/word"))
     .header("X-RapidAPI-Host", "random-words-with-pronunciation.p.rapidapi.com")
-    .header("X-RapidAPI-Key", "e477cbefb7msh5d203ec6373a1f1p1e5e74jsnc3f8fa60ec02")
+    .header("X-RapidAPI-Key", "")
     .method("GET", HttpRequest.BodyPublishers.noBody())
     .build();  
   try{
@@ -753,7 +753,7 @@ String receiveRandomWord() {
   HttpRequest request = HttpRequest.newBuilder()
     .uri(URI.create("https://quotes15.p.rapidapi.com/quotes/random/"))
     .header("X-RapidAPI-Host", "quotes15.p.rapidapi.com")
-    .header("X-RapidAPI-Key", "e477cbefb7msh5d203ec6373a1f1p1e5e74jsnc3f8fa60ec02")
+    .header("X-RapidAPI-Key", "")
     .method("GET", HttpRequest.BodyPublishers.noBody())
     .build();  
   try{
